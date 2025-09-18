@@ -36,7 +36,7 @@ add_exogenous: false
 #### Wandb settings ###########################################################
 use_wandb: false
 wandb:
-  project: "corel-ics"
+  project: "anonymous"
   entity: null
   tags: ["nexcp", "baseline"]
   notes: "NexCP baseline evaluation"

@@ -1,0 +1,44 @@
+# @package _global_
+
+#### Model params #############################################################
+model:
+  name: scp
+  hparams: {}
+
+#### Dataset params - MUST MATCH BASE MODEL ###################################
+dataset:
+  name: tep
+  sample_rate: 10
+  data_dir: null
+  connectivity:
+    method: correlation
+    threshold: 0.3
+    include_self: false
+    layout: edge_index
+  splitting:
+    method: temporal
+    val_len: 0.2    # MUST match base model
+    test_len: 0.2   # MUST match base model
+
+#### Windowing params - MUST MATCH BASE MODEL EXACTLY ###################
+window: 100
+horizon: 1
+stride: 1
+delay: 5
+
+scale_target: true
+scale_axis: node
+add_exogenous: false
+
+#### Wandb settings ###########################################################
+use_wandb: false
+wandb:
+  project: "corel-ics"
+  entity: null
+  tags: ["scp", "baseline"]
+  notes: "SCP baseline evaluation"
+
+#### Run settings #############################################################
+run:
+  dir: "logs/baseline/scp"
+  name: "scp_evaluation"

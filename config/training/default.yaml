@@ -13,13 +13,13 @@ num_threads: 1
 
 #### Training params ##########################################################
 epochs: 200
-train_batches: 100
+train_batches: 100 # process at most 100 batches per epoch
 patience: 50
 batch_size: 32
 
 grad_clip_val: 5
 apply_scaler: true
-scale_axis: graph
+scale_axis: graph 
 
 dataset:
   splitting:
@@ -28,3 +28,11 @@ dataset:
     test_len: 0.2
 
 save_outputs: true
+
+#### Wandb configuration #####################################################
+use_wandb: false
+wandb:
+  project: anonymous
+  entity: anonymous
+  tags: [base-model, training]
+  notes: "Base model training for GIRDER pipeline"

@@ -8,6 +8,14 @@ import yaml
 from omegaconf import DictConfig
 from pytorch_lightning.loggers import TensorBoardLogger
 
+# Add wandb import
+try:
+    import wandb
+    from pytorch_lightning.loggers import WandbLogger
+    WANDB_AVAILABLE = True
+except ImportError:
+    WANDB_AVAILABLE = False
+
 from lib.nn.decoder.multiquantile_readout import MultiQuantileDecoder
 from lib.nn.encoder_decoder_model import EncoderDecoderModel
 from lib.nn.encoders.corel_encoder import CoRelEncoder
@@ -18,6 +26,8 @@ from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 
 from lib.datasets.gpvar import GPVARDataset
 from lib.datasets.air_quality import AirQuality
+from lib.datasets.swat import SWaTDataset
+from lib.datasets.tep import TEPDataset  # Add this line
 from lib.engines.quantile_predictor import QuantilePredictor
 from lib.metrics.torch_metrics.coverage import MaskedCoverage, MaskedDeltaCoverage, MaskedPIWidth
 from lib.metrics.torch_metrics.pinball_loss import MaskedMultiPinballLoss
@@ -32,6 +42,8 @@ from tsl.datasets import MetrLA
 from tsl.experiment import Experiment
 
 from lib.metrics.torch_metrics.wrappers import MaskedMetricWrapper
+
+from lib.datasets.wadi import WADIDataset
 
 def get_encoder_class(encoder_str):
     # Basic models  #####################################################
@@ -55,12 +67,28 @@ def get_decoder_class(decoder_str):
 
 def get_dataset(dataset_cfg):
     name = dataset_cfg["name"]
+    
     if name == 'la':
         dataset = MetrLA()
     elif name == 'air':
         dataset = AirQuality()
     elif name == 'gpvar':
         dataset = GPVARDataset(**dataset_cfg["hparams"], p_max=0)
+    elif name == 'swat':
+        sample_rate = dataset_cfg.get('sample_rate', 10)
+        data_dir = dataset_cfg.get('data_dir', None)
+        dataset = SWaTDataset(root=data_dir, sample_rate=sample_rate)
+        print(f"SWaT dataset: {dataset.n_nodes} sensors, {len(dataset.actuator_names)} actuators (used as covariates)")
+    elif name == 'tep':
+        sample_rate = dataset_cfg.get('sample_rate', 10)
+        data_dir = dataset_cfg.get('data_dir', None)
+        dataset = TEPDataset(root=data_dir, sample_rate=sample_rate)
+        print(f"TEP dataset: {dataset.n_nodes} sensors, {len(dataset.actuator_names)} actuators (used as covariates)")
+    elif name == 'wadi':  # Add this case
+        sample_rate = dataset_cfg.get('sample_rate', 10)
+        data_dir = dataset_cfg.get('data_dir', None)
+        dataset = WADIDataset(root=data_dir, sample_rate=sample_rate)
+        print(f"WADI dataset: {dataset.n_nodes} sensors, {len(dataset.actuator_names)} actuators (used as covariates)")
     else:
         raise ValueError(f"Dataset {name} not available.")
     return dataset
@@ -262,6 +290,7 @@ def run_experiment(cfg: DictConfig):
         scheduler_class=scheduler_class,
         scheduler_kwargs=scheduler_kwargs,
         scale_target=cfg.scale_target,
+        sensor_names=dataset.sensor_names if hasattr(dataset, 'sensor_names') else None,
     )
 
     ########################################
@@ -271,7 +300,104 @@ def run_experiment(cfg: DictConfig):
     run_args = exp.get_config_dict()
     run_args['model']['trainable_parameters'] = predictor.trainable_parameters
 
-    exp_logger = TensorBoardLogger(save_dir=cfg.run.dir, name=cfg.run.name)
+    # Initialize loggers
+    loggers = []
+    
+    # Always use TensorBoard
+    tb_logger = TensorBoardLogger(save_dir=cfg.run.dir, name=cfg.run.name)
+    loggers.append(tb_logger)
+    
+    # Add wandb logger if enabled
+    if cfg.get('use_wandb', False) and WANDB_AVAILABLE:
+        # CoRel-specific info for wandb logging
+        corel_info = {
+            'stage': 'corel',
+            'base_model_dir': cfg.src_dir,
+            'dataset_name': cfg.dataset.name,
+            'n_nodes': dataset.n_nodes,
+            'alphas': cfg.alphas,
+            'target_quantiles': len(target_qs),
+            'quantile_range': [min(target_qs), max(target_qs)],
+            'window_size': cfg.window,
+            'val_len': cfg.val_len,
+            'encoder_type': cfg.model.encoder.name,
+            'decoder_type': cfg.model.decoder.name,
+            'residuals_shape': {
+                'input': str(residuals_input.shape),
+                'target': str(residuals_target.shape)
+            },
+            'n_calib_samples': len(calib_indices),
+            'n_test_samples': len(test_indices),
+            'coverage_targets': [f"{int((1-a)*100)}%" for a in cfg.alphas],
+        }
+        
+        # Add SWAT-specific info
+        if cfg.dataset.name == 'swat' and hasattr(dataset, 'sensor_names'):
+            corel_info.update({
+                'n_sensors': len(dataset.sensor_names),
+                'n_actuators': len(dataset.actuator_names) if hasattr(dataset, 'actuator_names') else 0,
+                'sensor_list': dataset.sensor_names[:10],  # First 10 sensors
+            })
+        
+        # Extract base model name from src_dir path
+        base_model_name = "unknown"
+        if cfg.src_dir:
+            # Extract model name from path like "./logs/base/swat/rnn/2025-09-09/11-05-22/"
+            path_parts = cfg.src_dir.strip('/').split('/')
+            for i, part in enumerate(path_parts):
+                if part == 'base' and i + 2 < len(path_parts):
+                    base_model_name = path_parts[i + 2]  # Should be 'rnn', 'transformer', 'stgnn', etc.
+                    break
+
+        # Create descriptive name based on dataset, base model, and current model
+        if cfg.model.name == 'corel':
+            wandb_name = f"{cfg.dataset.name}_{base_model_name}_corel"
+        elif cfg.model.name == 'rnn':  # This is for cornn
+            wandb_name = f"{cfg.dataset.name}_{base_model_name}_cornn"
+        else:
+            wandb_name = f"{cfg.dataset.name}_{base_model_name}_{cfg.model.name}"
+
+
+        wandb_logger = WandbLogger(
+            project=cfg.wandb.get('project', 'corel-ics'),
+            entity=cfg.wandb.get('entity', None),
+            name=wandb_name,  # Use the constructed name above
+            tags=cfg.wandb.get('tags', ['corel', cfg.dataset.name, cfg.model.name, base_model_name]),
+            notes=cfg.wandb.get('notes', f'CoRel conformal prediction training on {base_model_name} base model'),
+            save_dir=cfg.run.dir,
+            config={**run_args, **corel_info}  # Log all config + CoRel info
+        )
+        loggers.append(wandb_logger)
+        
+        # Log residuals statistics to wandb
+        try:
+            residuals_stats = {
+                'input_residuals_mean': float(residuals_input.mean().mean()),
+                'input_residuals_std': float(residuals_input.std().std()),
+                'target_residuals_mean': float(residuals_target.mean().mean()),
+                'target_residuals_std': float(residuals_target.std().std()),
+                'input_residuals_shape': residuals_input.shape,
+                'target_residuals_shape': residuals_target.shape,
+            }
+            wandb_logger.experiment.log({
+                "corel/residuals_statistics": residuals_stats
+            })
+        except Exception as e:
+            pass
+        
+        # Log coverage targets as a table
+        try:
+            coverage_table = wandb.Table(
+                columns=["Alpha", "Target_Coverage", "Expected_PI_Width"],
+                data=[[a, f"{(1-a)*100:.1f}%", "TBD"] for a in cfg.alphas]
+            )
+            wandb_logger.experiment.log({
+                "corel/coverage_targets": coverage_table
+            })
+        except Exception as e:
+            pass
+    
+    exp_logger = loggers[0] if len(loggers) == 1 else loggers
 
     ########################################
     # training                             #
@@ -310,6 +436,7 @@ def run_experiment(cfg: DictConfig):
     # run validation one last time to save val error best model
     trainer.validate(predictor, dataloaders=dm.val_dataloader())
     trainer.test(predictor, dataloaders=dm.test_dataloader())
+
 
 if __name__ == '__main__':
     exp = Experiment(run_fn=run_experiment, config_path='../config/corel',

@@ -12,5 +12,5 @@ model:
 
 dataset:
   connectivity:
-    layout: csr
+    layout: edge_index  # Changed from csr to edge_index
     include_self: False

@@ -1,25 +1,24 @@
-[![ICML](https://img.shields.io/badge/ICML-2025-blue.svg?style=flat-square)]()
-[![arXiv](https://img.shields.io/badge/arXiv-2305.19183-b31b1b.svg?style=flat-square)](https://arxiv.org/abs/2502.09443)
-[![PDF](https://img.shields.io/badge/%E2%87%A9-PDF-orange.svg?style=flat-square)](https://arxiv.org/pdf/2502.09443)
+# GIRDER: Graph Neural Network Conformal Prediction for Uncertainty Quantification in Industrial Control Systems
 
+This repository extends the CoRel framework for uncertainty quantification in Industrial Control Systems (ICS). This work builds upon and is inspired by the original CoRel prediction framework.
 
-# Relational Conformal Prediction for Correlated Time Series (ICML 2025)
+## Industrial Control System Datasets
 
-This repository contains the code to reproduce the experiments presented in the paper "*Relational Conformal Prediction for Correlated Time Series*".
+This work focuses on uncertainty quantification for Industrial Control Systems (ICS) using three key datasets:
 
-**Authors**: [Andrea Cini](https://andreacini.github.io/), [Alexander Jenkins](a.jenkins21@imperial.ac.uk), Danilo Mandic, Cesare Alippi, [Filippo Maria Bianchi](https://sites.google.com/view/filippombianchi/home)
+- **SWaT** (Secure Water Treatment): 25 sensors from a water treatment testbed
+- **TEP** (Tennessee Eastman Process): 41 sensors from a chemical process simulation  
+- **WADI** (Water Distribution): Sensors from a water distribution testbed
 
-## Datasets
+Each dataset is preprocessed with uniform 10-second sampling intervals and proper sensor/actuator separation.
 
-The datasets used in the experiments are provided by the <img src="https://raw.githubusercontent.com/TorchSpatiotemporal/tsl/main/docs/source/_static/img/tsl_logo.svg" width="25px" align="center"/> [**tsl**](https://torch-spatiotemporal.readthedocs.io/en/latest/) library. The CER-E dataset can be obtained for research purposes following the instructions at this [link](https://www.ucd.ie/issda/data/commissionforenergyregulationcer/).
+### Dataset Setup
 
-## Configuration files
+**TEP Dataset**: Included in this repository (`data/TEP/TEP_train.csv`)
 
-This project uses the <img src="https://raw.githubusercontent.com/TorchSpatiotemporal/tsl/main/docs/source/_static/img/logos/hydra.svg" width="25px" align="center"/> <a href="https://hydra.cc/">Hydra</a> library to handle the configuration of the hyperparameters and the other experimental settings.
-The `config` directory stores the configuration files used by Hydra to run the experiments.
+**SWaT Dataset**: Requires formal request from https://itrust.sutd.edu.sg/itrust-labs_datasets/dataset_info/ (see `data/SWAT/README.md`)
 
-The folder `config/training` contains the configs for training the base models, while `config/corel` contains the configs to train the $\texttt{CoRel}$ and $\texttt{CoRNN}$ models.
-To change a configuration, you can either modify the .yaml file directly or pass a different value to the args from the CLI (see example below).
+**WADI Dataset**: Requires formal request from https://itrust.sutd.edu.sg/itrust-labs_datasets/dataset_info/ (see `data/WADI/README.md`)
 
 ## Requirements
 
@@ -35,42 +34,47 @@ Once the environment is created, activate it:
 conda activate corel
 ```
 
-## Experiments
+## Quick Start Example
 
-The script used for the experiments in the paper is in the `experiments` folder.
-The procedure is divided in two steps: 
-1. train the base point predictor;
-2. train the conformal predictor.
-
-### Train the base model
-The first step is to train base point predictor and compute the residuals for the calibration/validation set.
-This is done by running [`run_base_model.py`](./experiments/run_base_model.py). 
-
-For example run the following command to train an RNN base predictor on the METR-LA dataset. 
-The `save_outputs` flag allows for saving the results that will be used for CP.
+### 1. Train Base Model (TEP Dataset)
 
 ```bash
-python -m experiments.run_base_model config=default model=rnn dataset=la save_outputs=true
+# Train RNN base model on TEP dataset
+python -m experiments.run_base_model config=default model=rnn dataset=tep save_outputs=true
 ```
 
-The results will be saved inside the `/log` folder. For example
+Results are saved in `logs/base/tep/rnn/YYYY-MM-DD/HH-MM-SS/` - **note this path for the next step**.
 
-> logs/base/la/rnn/2025-06-08/12-15-13/
+### 2. Train Conformal Predictor
 
-> [!CAUTION]
-> The name of the folder will change each time you train the point predictor. Take note of the path to perform the next step.
-
-### Train the conformal predictor
-The next step is to train the conformal prediction model ($\texttt{CoRel}$ or $\texttt{CoRNN}$) by running [`run_corel.py`](./experiments/run_corel.py).
-Note that here we need to pass the same directory created at the previous step, which contains the residuals of the calibration/validation set.
-    
 ```bash
-python -m experiments.run_corel config=default model=corel dataset=la src_dir="./logs/base/la/rnn/2025-06-08/12-15-13/"
+# Train CoRel on TEP with RNN base model (replace timestamp with actual path)
+python -m experiments.run_corel config=default model=corel dataset=tep src_dir="./logs/base/tep/rnn/2025-09-15/19-28-51/"
 ```
+
+## Available Models
+
+- **Base Models**: `rnn`, `transformer`, `stgnn`
+- **Conformal Models**: `corel` (graph-based), `cornn` (RNN-based)
+- **Baselines**: SCP, SeqCP, NexCP
+
+## Key Features
+
+- **ICS-Optimized**: Preprocessing and configurations specifically tuned for industrial control systems
+- **Comprehensive Baselines**: Multiple conformal prediction approaches for comparison
+- **Debug Logging**: Extensive debug output to track experiment progress
+
+## Acknowledgments
+
+This work is inspired by and builds upon the CoRel framework. We gratefully acknowledge the original CoRel authors for their foundational work.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Reference
 
-If you find this code useful please consider citing our paper:
+This work is inspired by and builds upon the CoRel framework. We gratefully acknowledge the original CoRel authors for their foundational work.
 
 ```bibtex
 @article{cini2025relational,

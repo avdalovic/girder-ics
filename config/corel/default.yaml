@@ -23,10 +23,18 @@ patience: 50
 batch_size: 64
 
 grad_clip_val: 5
-scale_axis: graph
+scale_axis: graph  
 
 val_len: 0.1
 
 #### Data loading #############################################################
 
 src_dir: ???
+
+#### Wandb configuration #####################################################
+use_wandb: false
+wandb:
+  project: anonymous
+  entity: anonymous
+  tags: [corel, conformal-prediction]
+  notes: "CoRel conformal prediction training"

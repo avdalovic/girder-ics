@@ -8,7 +8,16 @@ from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 from pytorch_lightning.loggers import TensorBoardLogger
 
+# Add wandb import
+try:
+    import wandb
+    from pytorch_lightning.loggers import WandbLogger
+    WANDB_AVAILABLE = True
+except ImportError:
+    WANDB_AVAILABLE = False
+
 from lib.datasets.gpvar import GPVARDataset
+from lib.datasets.swat import SWaTDataset
 from lib.engines.base_predictor import BasePredictor
 from lib.utils.data_utils import create_residuals_frame
 from tsl import logger
@@ -24,6 +33,9 @@ from tsl.utils.casting import torch_to_numpy
 
 from lib.nn.base import RNNModel, STGNNModel  # , MLPModel
 from lib.datasets.air_quality import AirQuality
+from tsl.data import BatchMap, BatchMapItem
+from lib.datasets.tep import TEPDataset
+from lib.datasets.wadi import WADIDataset
 
 
 def get_model_class(model_str):
@@ -41,14 +53,33 @@ def get_model_class(model_str):
 
 def get_dataset(dataset_cfg):
     name = dataset_cfg.name
+    
     if name == 'la':
         dataset = MetrLA()
     elif name == 'air':
         dataset = AirQuality()
     elif name == 'gpvar':
         dataset = GPVARDataset(**dataset_cfg.hparams, p_max=0)
+    elif name == 'swat':
+        # Get dataset parameters
+        sample_rate = dataset_cfg.get('sample_rate', 10)
+        data_dir = dataset_cfg.get('data_dir', None)
+        dataset = SWaTDataset(root=data_dir, sample_rate=sample_rate)
+        print(f"SWaT dataset: {dataset.n_nodes} sensors, {len(dataset.actuator_names)} actuators (used as covariates)")
+    elif name == 'tep':
+        # Get dataset parameters
+        sample_rate = dataset_cfg.get('sample_rate', 10)
+        data_dir = dataset_cfg.get('data_dir', None)
+        dataset = TEPDataset(root=data_dir, sample_rate=sample_rate)
+        print(f"TEP dataset: {dataset.n_nodes} sensors, {len(dataset.actuator_names)} actuators (used as covariates)")
+    elif name == 'wadi':  # Add this case
+        sample_rate = dataset_cfg.get('sample_rate', 10)
+        data_dir = dataset_cfg.get('data_dir', None)
+        dataset = WADIDataset(root=data_dir, sample_rate=sample_rate)
+        print(f"WADI dataset: {dataset.n_nodes} sensors, {len(dataset.actuator_names)} actuators (used as covariates)")
     else:
         raise ValueError(f"Dataset {name} not available.")
+    
     return dataset
 
 
@@ -61,10 +92,14 @@ def run_experiment(cfg: DictConfig):
     covariates = dict()
     if cfg.get('add_exogenous'):
         assert cfg.dataset.name not in {'gpvar'}
-        # encode time of the day and use it as exogenous variable
-        day_sin_cos = dataset.datetime_encoded('day').values
-        weekdays = dataset.datetime_onehot('weekday').values
-        covariates.update(u=np.concatenate([day_sin_cos, weekdays], axis=-1))
+        # Check if dataset has datetime methods before calling them
+        if hasattr(dataset, 'datetime_encoded') and hasattr(dataset, 'datetime_onehot'):
+            # encode time of the day and use it as exogenous variable
+            day_sin_cos = dataset.datetime_encoded('day').values
+            weekdays = dataset.datetime_onehot('weekday').values
+            covariates['u'] = np.concatenate([day_sin_cos, weekdays], axis=-1)
+        else:
+            pass  # Skip time encoding silently
 
     if cfg.dataset.name in {'gpvar', 'toy', 'mso'}:
         ds_index = pd.Index(dataset.index)
@@ -72,6 +107,8 @@ def run_experiment(cfg: DictConfig):
     else:
         ds_index = dataset.index
         index_type = 'datetime'
+
+
 
     torch_dataset = SpatioTemporalDataset(index=ds_index,
                                           target=dataset.dataframe(),
@@ -114,7 +151,10 @@ def run_experiment(cfg: DictConfig):
 
     model_cls = get_model_class(cfg.model.name)
 
-    d_exog = torch_dataset.input_map.u.shape[-1] if 'u' in torch_dataset else 0
+    d_exog = 0
+    if 'u' in torch_dataset:
+        d_exog += torch_dataset.input_map.u.shape[-1]
+
     model_kwargs = dict(n_nodes=torch_dataset.n_nodes,
                         input_size=torch_dataset.n_channels,
                         exog_size=d_exog,
@@ -163,7 +203,79 @@ def run_experiment(cfg: DictConfig):
     run_args = exp.get_config_dict()
     run_args['model']['trainable_parameters'] = predictor.trainable_parameters
 
-    exp_logger = TensorBoardLogger(save_dir=cfg.run.dir, name=cfg.run.name)
+    # Initialize loggers
+    loggers = []
+    
+    # Always use TensorBoard
+    tb_logger = TensorBoardLogger(save_dir=cfg.run.dir, name=cfg.run.name)
+    loggers.append(tb_logger)
+    
+    # Add wandb logger if enabled
+    if cfg.get('use_wandb', False) and WANDB_AVAILABLE:
+        # Dataset info for wandb logging
+        dataset_info = {
+            'dataset_name': cfg.dataset.name,
+            'n_nodes': dataset.n_nodes,
+            'n_channels': dataset.n_channels if hasattr(dataset, 'n_channels') else 1,
+            'data_shape': str(dataset.dataframe().shape),
+            'sample_rate': cfg.dataset.get('sample_rate', 'unknown'),
+            'window_size': cfg.window,
+            'horizon': cfg.horizon,
+            'stride': cfg.stride,
+            'delay': cfg.get('delay', 0),
+            'scale_axis': cfg.get('scale_axis', 'graph'),
+            'connectivity_method': cfg.dataset.connectivity.get('method', 'unknown'),
+            'connectivity_threshold': cfg.dataset.connectivity.get('threshold', 'unknown'),
+        }
+        
+        # Add SWAT-specific info
+        if cfg.dataset.name == 'swat' and hasattr(dataset, 'sensor_names'):
+            dataset_info.update({
+                'n_sensors': len(dataset.sensor_names),
+                'n_actuators': len(dataset.actuator_names) if hasattr(dataset, 'actuator_names') else 0,
+                'sensor_list': dataset.sensor_names[:10],  # First 10 sensors
+                'actuator_list': dataset.actuator_names[:10] if hasattr(dataset, 'actuator_names') else [],
+            })
+        
+        wandb_logger = WandbLogger(
+            project=cfg.wandb.get('project', 'corel-ics'),
+            entity=cfg.wandb.get('entity', None),
+            name=cfg.wandb.get('name', f"{cfg.dataset.name}_{cfg.model.name}_base"),
+            tags=cfg.wandb.get('tags', ['base_model', cfg.dataset.name, cfg.model.name]),
+            notes=cfg.wandb.get('notes', 'Base model training for GIRDER pipeline'),
+            save_dir=cfg.run.dir,
+            config={**run_args, **dataset_info}  # Log all config + dataset info
+        )
+        loggers.append(wandb_logger)
+        
+        # Log additional dataset statistics to wandb
+        if hasattr(dataset, 'get_sensor_statistics'):
+            try:
+                sensor_stats = dataset.get_sensor_statistics()
+                wandb_logger.experiment.log({
+                    "dataset/sensor_statistics": wandb.Table(
+                        columns=["sensor", "mean", "std", "min", "max", "missing_pct"],
+                        data=[[k, v['mean'], v['std'], v['min'], v['max'], v['missing_pct']] 
+                              for k, v in list(sensor_stats.items())[:20]]  # First 20 sensors
+                    )
+                })
+            except Exception as e:
+                pass
+        
+        # Log connectivity visualization if available
+        try:
+            adj = dataset.get_connectivity(**cfg.dataset.connectivity)
+            if isinstance(adj, tuple):
+                edge_index, _ = adj
+                if edge_index.shape[1] > 0:
+                    wandb_logger.experiment.log({
+                        "dataset/n_edges": edge_index.shape[1],
+                        "dataset/connectivity_density": edge_index.shape[1] / (dataset.n_nodes * dataset.n_nodes)
+                    })
+        except Exception as e:
+            pass
+    
+    exp_logger = loggers[0] if len(loggers) == 1 else loggers
 
     ########################################
     # training                             #

@@ -1,0 +1,31 @@
+# @package _global_
+
+#### Dataset params ###########################################################
+dataset:
+  name: swat
+  sample_rate: 10  # Sample every 10 seconds to reduce data size
+  data_dir: null   # Will use default data/SWAT directory
+  connectivity:
+    method: correlation
+    threshold: 0.3
+    include_self: false
+    layout: edge_index
+  splitting:
+    method: temporal
+    val_len: 0.4     # MUST match base model (was 0.4 in actual run)
+    test_len: 0.2    # MUST match base model
+
+#### Windowing params - MUST MATCH BASE MODEL EXACTLY ###################
+window: 100       # Changed to match transformer's window size
+horizon: 1        # MUST match base model horizon
+stride: 1        # MUST match training/dataset/swat.yaml  
+delay: 5          # MUST match training/dataset/swat.yaml
+
+scale_target: true
+scale_axis: node  # MUST match base model scaling
+add_exogenous: false  # Disable time features for SWAT (not needed)
+
+enable_attack_detection: true
+attack_detection:
+  threshold_coverage_deviation: 0.1  # Flag if coverage drops by >10%
+  threshold_pi_width_increase: 0.5   # Flag if PI width increases by >50%

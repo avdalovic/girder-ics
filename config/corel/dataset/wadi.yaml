@@ -1,0 +1,28 @@
+# @package _global_
+
+#### Dataset params ###########################################################
+dataset:
+  name: wadi
+  sample_rate: 10
+  data_dir: null
+  connectivity:
+    method: correlation
+    threshold: 0.3
+    include_self: false
+    layout: edge_index
+  splitting:
+    method: temporal
+    val_len: 0.2
+    test_len: 0.2
+
+#### Windowing params - MUST MATCH BASE MODEL EXACTLY ###################
+window: 100
+horizon: 1
+stride: 1
+delay: 5
+
+scale_target: true
+scale_axis: node
+add_exogenous: false
+
+enable_attack_detection: false

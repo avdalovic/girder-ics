@@ -376,7 +376,7 @@ def run_experiment(cfg: DictConfig):
             entity=cfg.wandb.get('entity', None),
             name=wandb_name,  # Use the constructed name above
             tags=cfg.wandb.get('tags', ['corel', cfg.dataset.name, cfg.model.name, base_model_name]),
-            notes=cfg.wandb.get('notes', f'CoRel conformal prediction training on {base_model_name} base model'),
+            notes=cfg.wandb.get('notes', f'Conformal prediction training on {base_model_name} base model'),
             save_dir=cfg.run.dir,
             config={**run_args, **corel_info}  # Log all config + CoRel info
         )

@@ -255,7 +255,7 @@ def run_experiment(cfg: DictConfig):
             entity=cfg.wandb.get('entity', None),
             name=cfg.wandb.get('name', f"{cfg.dataset.name}_{cfg.model.name}_base"),
             tags=cfg.wandb.get('tags', ['base_model', cfg.dataset.name, cfg.model.name]),
-            notes=cfg.wandb.get('notes', 'Base model training for GIRDER pipeline'),
+            notes=cfg.wandb.get('notes', 'Base model training for conformal prediction pipeline'),
             save_dir=cfg.run.dir,
             config={**run_args, **dataset_info}  # Log all config + dataset info
         )

@@ -1,6 +1,6 @@
 # GIRDER: Graph Neural Network Conformal Prediction for Uncertainty Quantification in Industrial Control Systems
 
-This repository extends the CoRel framework for uncertainty quantification in Industrial Control Systems (ICS). This work builds upon and is inspired by the original CoRel prediction framework.
+This repository implements graph neural network-based conformal prediction for uncertainty quantification in Industrial Control Systems (ICS).
 
 ## Industrial Control System Datasets
 
@@ -64,23 +64,6 @@ python -m experiments.run_corel config=default model=corel dataset=tep src_dir="
 - **Comprehensive Baselines**: Multiple conformal prediction approaches for comparison
 - **Debug Logging**: Extensive debug output to track experiment progress
 
-## Acknowledgments
-
-This work is inspired by and builds upon the CoRel framework. We gratefully acknowledge the original CoRel authors for their foundational work.
-
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Reference
-
-This work is inspired by and builds upon the CoRel framework. We gratefully acknowledge the original CoRel authors for their foundational work.
-
-```bibtex
-@article{cini2025relational,
-title        = {{Relational Conformal Prediction for Correlated Time Series}},
-author       = {Cini, Andrea and Jenkins, Alexander and Mandic, Danilo and Alippi, Cesare and Bianchi, Filippo Maria},
-journal      = {International Conference on Machine Learning},
-year         = {2025}
-}
-```

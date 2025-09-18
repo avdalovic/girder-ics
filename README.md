@@ -49,7 +49,7 @@ Results are saved in `logs/base/tep/rnn/YYYY-MM-DD/HH-MM-SS/` - **note this path
 
 ```bash
 # Train CoRel on TEP with RNN base model (replace timestamp with actual path)
-python -m experiments.run_corel config=default model=corel dataset=tep src_dir="./logs/base/tep/rnn/2025-09-15/19-28-51/"
+python -m experiments.run_corel config=default model=corel dataset=tep src_dir="./logs/base/tep/YYYY-MM-DD/HH-MM-SS/"
 ```
 
 ## Available Models

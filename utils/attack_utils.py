@@ -1,0 +1,639 @@
+
+
+# numpy stack
+import numpy as np
+import networkx as nx
+import pdb
+
+# Ignore ugly futurewarnings from np vs tf.
+import warnings
+warnings.filterwarnings('ignore',category=FutureWarning)
+
+def get_attack_indices(dataset_name):
+
+	if dataset_name == "SWAT":
+
+		attacks = [
+			np.arange(1738,2672),  # Attack 0 (1 in Doc) on MV101
+			np.arange(3046,3490),  # Attack 1 (2 in Doc) on P102
+			np.arange(4901,5282),  # Attack 2 (3 in Doc) on LIT101
+			np.arange(7233,7431),  # Attack 3 (6 in Doc) on AIT202
+			np.arange(7685,8113),  # Attack 4 (7 in Doc) on LIT301
+			np.arange(11385,12355),  # Attack 5 (8 in Doc) on DPIT301
+			np.arange(15361,16083),  # Attack 6 (10 in Doc) on FIT401
+			np.arange(90662,90917),  # Attack 7 (13 in Doc) on MV304
+			np.arange(93424,93705),  # Attack 8 (16 in Doc) on LIT301
+			np.arange(103092,103797),  # Attack 8.5 (17 in Doc) on MV303
+
+			np.arange(115822,116080),  # Attack 9 (19 in Doc) on AIT504
+			np.arange(116123,116515),  # Attack 10 (20 in Doc) on AIT504
+			np.arange(116999,117700),  # Attack 11 (21 in Doc) on LIT101
+			np.arange(132896,133362),  # Attack 12 (22 in Doc) on UV401/AIT502
+			np.arange(142927,143611),  # Attack 13 (23 in Doc) on DPIT301
+			np.arange(172268,172588),  # Attack 14 (24 in Doc) on P203/205 
+			np.arange(172892,173499),  # Attack 15 (25 in Doc) on LIT401
+			np.arange(198273,199716),  # Attack 16 (26 in Doc) on P102/LIT301
+			np.arange(227828,228361),  # Attack 17 (27 in Doc) on LIT401
+			np.arange(229519,263727),  # Attack 18 (28 in Doc) on P302
+			np.arange(280023,281184),  # Attack 19 (30 in Doc) on P101/MV201/LIT101
+			np.arange(302653,303019),  # Attack 20 (31 in Doc) on LIT401
+			np.arange(347718,348315),  # Attack 21 (32 in Doc) on LIT301
+			np.arange(361243,361674),  # Attack 22 (33 in Doc) on LIT101
+			np.arange(371519,371618),  # Attack 23 (34 in Doc) on P101
+			np.arange(371893,372374),  # Attack 24 (35 in Doc) on P101
+			np.arange(389746,390262),  # Attack 25 (36 in Doc) on LIT101
+			np.arange(436672,437046),  # Attack 26 (37 in Doc) on FIT502
+			np.arange(437455,437735),  # Attack 27 (38 in Doc) on AIT402/AIT502
+			np.arange(438184,438583),  # Attack 28 (39 in Doc) on FIT401/AIT502
+			np.arange(438659,438955),  # Attack 29 (40 in Doc) on FIT401
+			np.arange(443540,445191)  # Attack 30 (41 in Doc) on LIT301
+		]
+
+		true_labels = [
+			["MV101"], # Attack 0 (1 in Doc) on MV101
+			["P102"], # Attack 1 (2 in Doc) on P102
+			["LIT101"], # Attack 2 (3 in Doc) on LIT101
+			["AIT202"],  # Attack 3 (6 in Doc) on AIT202
+			["LIT301"],  # Attack 4 (7 in Doc) on LIT301
+			["DPIT301"],  # Attack 5 (8 in Doc) on DPIT301
+			["FIT401"],  # Attack 6 (10 in Doc) on FIT401
+			["MV304"],  # Attack 7 (13 in Doc) on MV304
+			["LIT301"],  # Attack 8 (16 in Doc) on LIT301
+			["MV303"],  # Attack 8.5 (17 in Doc) on LIT301
+			["AIT504"],  # Attack 9 (19 in Doc) on AIT504
+			["AIT504"],  # Attack 10 (20 in Doc) on AIT504
+			["LIT101"],  # Attack 11 (21 in Doc) on LIT101
+			["UV401", "AIT502"],  # Attack 12 (22 in Doc) on UV401/AIT502
+			["DPIT301"],  # Attack 13 (23 in Doc) on DPIT301
+			["P203", "P205"],  # Attack 14 (24 in Doc) on P203/205 
+			["LIT401"],  # Attack 15 (25 in Doc) on LIT401
+			["P101", "LIT301"],  # Attack 16 (26 in Doc) on P101/LIT301
+			["LIT401"],  # Attack 17 (27 in Doc) on LIT401
+			["P302"],  # Attack 18 (28 in Doc) on P302
+			["P101", "MV201", "LIT101"],  # Attack 19 (30 in Doc) on P101/MV201/LIT101
+			["LIT401"],  # Attack 20 (31 in Doc) on LIT401
+			["LIT301"],  # Attack 21 (32 in Doc) on LIT301
+			["LIT101"],  # Attack 22 (33 in Doc) on LIT101
+			["P101"],  # Attack 23 (34 in Doc) on P101
+			["P101"],  # Attack 24 (35 in Doc) on P101
+			["LIT101"],  # Attack 25 (36 in Doc) on LIT101
+			["FIT502"],  # Attack 26 (37 in Doc) on FIT502
+			["AIT402", "AIT502"],  # Attack 27 (38 in Doc) on AIT402/AIT502
+			["FIT401", "AIT502"],  # Attack 28 (39 in Doc) on FIT401/AIT502
+			["FIT401"],  # Attack 29 (40 in Doc) on FIT401
+			["LIT301"]  # Attack 30 (41 in Doc) on LIT301
+		]
+
+	elif dataset_name == "WADI":
+
+		attacks = [
+			np.arange(5139, 6619),       # Attack 1
+			np.arange(59069, 59613),     # Attack 2 
+			np.arange(61058, 61622),     # Attack 3
+			np.arange(61667, 61936),     # Attack 4
+			np.arange(63046, 63891),     # Attack 5
+			np.arange(70795, 71458),     # Attack 6
+			np.arange(74828, 75592),     # Attack 7
+			np.arange(85239, 85779),     # Attack 8
+			np.arange(147297, 147380),   # Attack 9
+			np.arange(148657, 149479),   # Attack 10
+			np.arange(149793, 150417),   # Attack 11
+			np.arange(151132, 151508),   # Attack 12
+			np.arange(151661, 151853),   # Attack 13
+			np.arange(152174, 152742),   # Attack 14
+			np.arange(163804, 164221)    # Attack 15
+		]
+
+		true_labels = [
+			["1_MV_001_STATUS"],       # Attack 1
+			["1_FIT_001_PV"],     # Attack 2 
+			["2_MV_003_STATUS"],     # Attack 3
+			["1_AIT_001_PV"],     # Attack 4
+			["2_MCV_101_CO", "2_MCV_201_CO", "2_MCV_301_CO", "2_MCV_401_CO", "2_MCV_501_CO", "2_MCV_601_CO"],     # Attack 5
+			["2_FIC_101_PV", "2_FIC_201_PV"],     # Attack 6
+			["1_AIT_002_PV", "2_MV_003_STATUS"],     # Attack 7
+			["2_MCV_007_CO"],     # Attack 8
+			["1_P_006_STATUS"],   # Attack 9
+			["1_MV_001_STATUS"],   # Attack 10
+			["2_MCV_007_CO"],   # Attack 11
+			["2_MCV_007_CO"],   # Attack 12
+			["2_PIC_003_CO", "2_PIC_003_SP"],   # Attack 13
+			["1_P_001_STATUS", "1_P_003_STATUS"],   # Attack 14
+			["2_MV_003_STATUS"]    # Attack 15
+		]
+
+	elif dataset_name == "TEP":
+
+		# Each TEP test file is 96001 samples long, with attacks at 10000-14000
+		# When concatenating 5 files, we need to offset each attack
+		file_length = 96001
+		attack_start = 10000
+		attack_end = 14000  # np.arange(10000, 14000) gives 10000-13999
+		
+		attacks = [
+			np.arange(attack_start, attack_end),                    # Attack 1: cons_p2s_s1 (A Feed) - File 1: 10000-13999
+			np.arange(attack_start + file_length, attack_end + file_length),      # Attack 2: cons_m2s_a1 (D Feed MV) - File 2: 106001-110000
+			np.arange(attack_start + 2*file_length, attack_end + 2*file_length),  # Attack 3: cons_m2s_s8 (Reactor Level) - File 3: 202002-206001
+			np.arange(attack_start + 3*file_length, attack_end + 3*file_length),  # Attack 4: cons_p2s_s17 (Stripper Underflow) - File 4: 298003-302002
+			np.arange(attack_start + 4*file_length, attack_end + 4*file_length),  # Attack 5: csum_m2s_s40 (Comp D in Product) - File 5: 394004-398003
+		]
+
+		true_labels = [
+			["A Feed"],  # Attack 1: constant +2sigma attack on A Feed sensor
+			["D Feed (MV)"],  # Attack 2: constant -2sigma attack on D Feed actuator
+			["Reactor Level"],  # Attack 3: constant -2sigma attack on Reactor Level sensor
+			["Stripper Underflow"],  # Attack 4: constant +2sigma attack on Stripper Underflow sensor
+			["Comp D in Product"],  # Attack 5: cumulative -2sigma attack on Comp D in Product sensor
+		]
+
+	else:
+
+		print(f'Warning: dataset {dataset_name} does not exist.')
+		attacks = []
+		true_labels = []
+
+	return attacks, true_labels
+
+def get_attack_sds(dataset_name):
+
+	sds = []
+	if dataset_name == 'SWAT':
+
+		sds = [
+			(0, "MV101", 'cons', 'solo', 0.61), # Attack 0 (1 in Doc) on MV101
+			(1, "P102", 'cons', 'solo', 100), # Attack 1 (2 in Doc) on P102
+			(2, "LIT101", 'line', 'solo', 2.77), # Attack 2 (3 in Doc) on LIT101
+			(3, "AIT202", 'cons', 'solo', 26.56), # Attack X (3 in Doc) on AIT202
+			(4 ,"LIT301", 'cons', 'solo', 3.17),  # Attack 3 (7 in Doc) on LIT301
+			(5, "DPIT301", 'cons', 'solo', 4.20),  # Attack 4 (8 in Doc) on DPIT301
+			(6, "FIT401", 'cons', 'solo', -17),  # Attack 5 (10 in Doc) on FIT401
+			(7, "MV304", 'cons', 'solo', -0.1),  # Attack 6 (13 in Doc) on MV304
+			(8, "LIT301", 'line', 'solo', -3.38),  # Attack 7 (16 in Doc) on LIT301
+			(9, "MV303", 'cons', 'solo', -0.12),  # Attack 8 (17 in Doc) on LIT301
+			(10, "AIT504", 'cons', 'solo', 0.58),  # Attack 9 (19 in Doc) on AIT504
+			(11, "AIT504", 'cons', 'solo', 36.31),  # Attack 10 (20 in Doc) on AIT504
+			(12, "LIT101", 'cons','multi',  0.92),  # Attack 11 (21 in Doc) on LIT101/MV101
+			(12, "MV101", 'cons', 'multi', 0.61),  # Attack 11 (21 in Doc) on LIT101/MV101
+			(13, "UV401", 'cons', 'multi', -17.64),  # Attack 12 (22 in Doc) on UV401/AIT502/P501
+			(13, "P501", 'cons', 'multi', -17.19),  # Attack 12 (22 in Doc) on UV401/AIT502/P501
+			(14, "DPIT301", 'cons', 'multi', -2.39),  # Attack 13 (23 in Doc) on DPIT301/MV302/P602
+			(14, "MV302", 'cons', 'multi', 0.48),  # Attack 13 (23 in Doc) on DPIT301/MV302/P602
+			(14, "P602", 'cons', 'multi', -0.09),  # Attack 13 (23 in Doc) on DPIT301/MV302/P602
+			(15, "P203", 'cons', 'solo', -1.72),  # Attack 14 (24 in Doc) on P203/205 
+			(16, "LIT401", 'cons', 'multi', 1.32), # Attack 15 (25 in Doc) on LIT401/P402
+			(16, "P402", 'cons', 'multi', 0.06), # Attack 15 (25 in Doc) on LIT401/P402
+			(17, "P101", 'cons', 'multi', 0.58),  # Attack 16 (26 in Doc) on P101/LIT301
+			(17, "LIT301", 'cons', 'multi', -1.04),  # Attack 16 (26 in Doc) on P101/LIT301
+			(18, "LIT401", 'cons', 'multi', -3.19),  # Attack 17 (27 in Doc) on LIT401/P302
+			(18, "P302", 'cons', 'multi', 0.47),  # Attack 17 (27 in Doc) on LIT401/P302
+			(19, "P302", 'cons', 'solo', -2.14),   # Attack 18 (28 in Doc) on P302
+			(20, "P101", 'cons', 'multi', 0.58), # Attack 19 (30 in Doc) on P101/MV201/LIT101
+			(20, "MV201", 'cons', 'multi', 0.57), # Attack 19 (30 in Doc) on P101/MV201/LIT101
+			(20, "LIT101", 'cons', 'multi', 0.92), # Attack 19 (30 in Doc) on P101/MV201/LIT101
+			(21, "LIT401", 'cons', 'solo', -3.19),  # Attack 20 (31 in Doc) on LIT401
+			(22, "LIT301", 'cons', 'solo', 3.18),  # Attack 21 (32 in Doc) on LIT301
+			(23, "LIT101", 'cons', 'solo', 1.75),  # Attack 22 (33 in Doc) on LIT101
+			(24, "P101", 'cons', 'solo', -1.72),  # Attack 23 (34 in Doc) on P101
+			(25, "P101", 'cons', 'multi', -1.72),  # Attack 24 (35 in Doc) on P101/P102
+			(25, "P102", 'cons', 'multi', 1e-3),  # Attack 24 (35 in Doc) on P101/P102
+			(26, "LIT101", 'cons', 'solo', -2.82),  # Attack 25 (36 in Doc) on LIT101
+			(27, "FIT502", 'cons', 'solo', 0.25),  # Attack 26 (37 in Doc) on FIT502
+			(28, "AIT402", 'cons', 'multi', 6.88),  # Attack 26.5 (38 in Doc) on AIT402/AIT502
+			(28, "AIT502", 'cons', 'multi', 7.52),  # Attack 26.5 (38 in Doc) on AIT502/AIT502
+			(29, "FIT401", 'cons', 'solo', -12),  # Attack 27 (39 in Doc) on FIT401/AIT502
+			(30, "FIT401", 'cons', 'solo', -17),  # Attack 28 (40 in Doc) on FIT401
+			(31, "LIT301", 'line', 'solo', -5.66)  # Attack 29 (41 in Doc) on LIT301
+		]
+
+	elif dataset_name == 'TEP':
+
+		sds = [
+			(0, "A Feed", 'cons', 'solo', 0.61), # Attack 1: cons_p2s_s1 - constant +2sigma attack on A Feed sensor
+			(1, "D Feed (MV)", 'cons', 'solo', -0.57), # Attack 2: cons_m2s_a1 - constant -2sigma attack on D Feed actuator
+			(2, "Reactor Level", 'cons', 'solo', -3.18), # Attack 3: cons_m2s_s8 - constant -2sigma attack on Reactor Level sensor
+			(3, "Stripper Underflow", 'cons', 'solo', 2.77), # Attack 4: cons_p2s_s17 - constant +2sigma attack on Stripper Underflow sensor
+			(4, "Comp D in Product", 'csum', 'solo', -0.92), # Attack 5: csum_m2s_s40 - cumulative -2sigma attack on Comp D in Product sensor
+		]
+
+	elif dataset_name == 'WADI':
+
+		sds = [
+			(0, '1_MV_001_STATUS', 'cons', 'solo', 1.62),
+			(1, '1_FIT_001_PV', 'cons', 'solo', 1.27),
+			(2, '2_MV_003_STATUS', 'cons', 'solo', 0.50), 
+			(3, '1_AIT_001_PV', 'cons', 'solo', 35.348),
+			(4, '2_MCV_101_CO', 'cons', 'multi', 5.83),
+			(4, '2_MCV_201_CO', 'cons', 'multi', 5.16),
+			(4, '2_MCV_301_CO', 'cons', 'multi', 3.94),
+			(4, '2_MCV_401_CO', 'cons', 'multi', 5.68),
+			(4, '2_MCV_501_CO', 'cons', 'multi', 5.1),
+			(4, '2_MCV_601_CO', 'cons', 'multi', 3.61),
+			(5, '2_FIC_101_PV', 'cons', 'multi', 0.903),
+			(5, '2_FIC_201_PV', 'cons', 'multi', 1.298),
+			(6, '1_AIT_002_PV', 'cons', 'multi', 91),
+			(6, '2_MV_003_STATUS', 'cons', 'multi', 1.79),
+			(7, '2_MCV_007_CO', 'cons', 'solo', 100),
+			(8, '1_P_006_STATUS', 'cons', 'solo', 100),
+			(9, '1_MV_001_STATUS', 'cons', 'solo', 1.626),
+			(10, '2_MCV_007_CO', 'cons', 'solo', 100),
+			(11, '2_MCV_007_CO', 'cons', 'solo', 100),
+			(12, '2_PIC_003_CO', 'cons', 'multi', 2.94),
+			(12, '2_PIC_003_SP', 'cons', 'multi', 100),
+			(13, '1_P_001_STATUS', 'cons', 'multi', 0.615),
+			(13, '1_P_003_STATUS', 'cons', 'multi', 0.615),
+			(14, '2_MV_003_STATUS', 'cons', 'solo', 1.79),
+		]
+
+	return sds
+
+def get_sensor_subsets(dataset_name, by_plc = True):
+
+	subprocess_idxs = []
+	subprocess_labels = []
+
+	if dataset_name == 'SWAT':
+
+		if by_plc:
+
+			# Which sub process of SWaT?
+			subprocess_idxs = [
+				[0, 1, 2, 3],                   # PLC 1
+				[5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], # PLC 2
+				[9, 16, 17, 18, 19, 20, 23],    # PLC 3
+				[26, 27, 28, 29],               # PLC 4
+				[34, 38, 39, 42],               # PLC 5
+			]
+
+			subprocess_labels =[
+				['FIT101', 'LIT101', 'MV101', 'P101'],
+				['AIT201', 'AIT202', 'AIT203', 'FIT201', 'MV201', 'P201', 'P202', 'P203', 'P204', 'P205', 'P206'],
+				['MV201', 'DPIT301', 'FIT301', 'LIT301', 'MV301', 'MV302', 'P301'],
+				['AIT402', 'FIT401', 'LIT401', 'P401'],
+				['AIT501', 'FIT501', 'FIT502', 'P501'],
+			]
+
+		else:
+
+			subprocess_idxs = [
+				range(0, 5),   # Process 1
+				range(5, 16),  # Process 2
+				range(16, 25), # Process 3
+				range(25, 34), # Process 4
+				range(34, 47), # Process 5
+				range(47, 51), # Process 6
+			]
+
+	elif dataset_name == 'TEP' or dataset_name == 'TEPK':
+		
+		if by_plc:
+
+			subprocess_idxs = [
+				[1, 16, 39, 41],     # XMV 1
+				[2, 16, 39, 42],     # XMV 2
+				[0, 16, 22, 24, 43], # XMV 3
+				[3, 16, 22, 24, 44], # XMV 4
+				[6, 9, 16, 46],      # XMV 6
+				[11, 13, 16, 47],    # XMV 7
+				[14, 16, 48],        # XMV 8
+				[8, 50],             # XMV 10
+				[7, 10, 51],         # XMV 11
+				
+				# Physical
+				[0, 1, 2, 3, 6, 7, 8, 9, 10, 11, 13, 14, 16, 22, 24, 39, 41, 42, 43, 44, 46, 47, 48, 50, 51],
+			]
+
+			subprocess_labels = [
+				['D Feed', 'Stripper Underflow', 'Comp G in Product', 'D Feed (MV)'],
+				['E Feed', 'Stripper Underflow', 'Comp G in Product', 'E Feed (MV)'],
+				['A Feed', 'Stripper Underflow', 'Comp A to Reactor', 'Comp C to Reactor', 'A Feed (MV)'],
+				['A and C Feed', 'Stripper Underflow', 'Comp A to Reactor', 'Comp C to Reactor', 'A and C Feed (MV)'],
+				['Reactor Pressure', 'Purge Rate', 'Stripper Underflow', 'Purge (MV)'],
+				['Product Sep Level', 'Product Sep Underflow', 'Stripper Underflow', 'Separator (MV)'],
+				['Stripper Level', 'Stripper Underflow', 'Stripper (MV)'],
+				['Reactor Temperature', 'Reactor Coolant (MV)'],
+				['Reactor Level', 'Product Sep Temp', 'Condenser Coolant (MV)'],
+				['Physical']
+			]
+
+	
+	return subprocess_idxs, subprocess_labels
+
+SWAT_SUB_MAP = {
+	'1_Raw_Water_Tank' : ['MV101', 'LIT101', 'FIT101', 'P101', 'P102'],
+	'2_Chemical' : ['P201', 'P202', 'P203', 'P204', 'P205', 'P206', 'FIT201', 'AIT201', 'AIT202', 'AIT203', 'MV201'], 
+	#'2_Chemical' : ['P201', 'P202', 'P203', 'P204', 'P205', 'P206', 'FIT201', 'AIT202', 'AIT203', 'MV201'], # if AIT201 causes too much bias
+	'3_UltraFilt' : ['FIT301', 'LIT301', 'DPIT301', 'P301', 'P302', 'MV301', 'MV302', 'MV303', 'MV304'],
+	'4_DeChloro' : ['UV401', 'P401', 'P402', 'P403', 'P404', 'AIT401', 'AIT402', 'FIT401', 'LIT401'],
+	'5_RO' : ['AIT501', 'AIT502', 'AIT503', 'AIT504', 'FIT501', 'FIT502', 'FIT503', 'FIT504', 'P501', 'P502', 'PIT501', 'PIT502', 'PIT503'],
+	'6_Return' : ['P601', 'P602', 'P603', 'FIT601']
+}
+
+WADI_SUB_MAP = {
+	'1_Raw_Water_Tank' : ['1_AIT_001_PV', '1_AIT_002_PV', '1_AIT_003_PV', '1_AIT_004_PV', '1_AIT_005_PV',
+		'1_FIT_001_PV', '1_LS_001_AL', '1_LS_002_AL', '1_LT_001_PV',
+		'1_MV_001_STATUS', '1_MV_002_STATUS', '1_MV_003_STATUS', '1_MV_004_STATUS',
+		'1_P_001_STATUS', '1_P_002_STATUS', '1_P_003_STATUS', '1_P_004_STATUS', '1_P_005_STATUS', '1_P_006_STATUS'],
+	'Elevated' : ['2_FIT_001_PV', '2_FIT_002_PV', '2_FIT_003_PV', '2_LT_001_PV', '2_LT_002_PV', '2_PIT_001_PV',
+	 	'2_MV_001_STATUS', '2_MV_002_STATUS', '2_MV_003_STATUS', '2_MV_004_STATUS', '2_MV_005_STATUS', '2_MV_006_STATUS',
+		'2A_AIT_001_PV', '2A_AIT_002_PV', '2A_AIT_003_PV', '2A_AIT_004_PV',],
+	'Booster': ['2_DPIT_001_PV', '2_MCV_007_CO', '2_MV_009_STATUS', 
+		'2_P_003_SPEED', '2_P_003_STATUS', '2_P_004_SPEED', '2_P_004_STATUS',
+		'2_PIT_002_PV', '2_PIT_003_PV', '2B_AIT_001_PV', '2B_AIT_003_PV', '2B_AIT_004_PV',
+		'2_PIC_003_CO', '2_PIC_003_PV', '2_PIC_003_SP'],
+	'Consumers': ['2_FIC_101_CO', '2_FIC_101_PV', '2_FIC_101_SP', '2_FIC_201_CO', '2_FIC_201_PV', '2_FIC_201_SP', '2_FIC_301_CO', '2_FIC_301_PV', '2_FIC_301_SP', 
+		'2_FIC_401_CO', '2_FIC_401_PV', '2_FIC_401_SP', '2_FIC_501_CO', '2_FIC_501_PV', '2_FIC_501_SP', '2_FIC_601_CO', '2_FIC_601_PV', '2_FIC_601_SP',
+		'2_FQ_101_PV', '2_FQ_201_PV', '2_FQ_301_PV', '2_FQ_401_PV', '2_FQ_501_PV', '2_FQ_601_PV', 
+		'2_LS_101_AH', '2_LS_101_AL', '2_LS_201_AH', '2_LS_201_AL', '2_LS_301_AH', '2_LS_301_AL', 
+		'2_LS_401_AH', '2_LS_401_AL', '2_LS_501_AH', '2_LS_501_AL', '2_LS_601_AH', '2_LS_601_AL',
+		'2_MCV_101_CO', '2_MCV_201_CO', '2_MCV_301_CO', '2_MCV_401_CO', '2_MCV_501_CO', '2_MCV_601_CO',
+		'2_MV_101_STATUS', '2_MV_201_STATUS', '2_MV_301_STATUS', '2_MV_401_STATUS', '2_MV_501_STATUS', '2_MV_601_STATUS',
+		'2_SV_101_STATUS', '2_SV_201_STATUS', '2_SV_301_STATUS', '2_SV_401_STATUS', '2_SV_501_STATUS', '2_SV_601_STATUS'],
+	'Return': ['3_AIT_001_PV', '3_AIT_002_PV', '3_AIT_003_PV', '3_AIT_004_PV', '3_AIT_005_PV', 
+		'3_FIT_001_PV', '3_LS_001_AL', '3_LT_001_PV', '3_MV_001_STATUS', '3_MV_002_STATUS', '3_MV_003_STATUS', '3_P_001_STATUS', '3_P_002_STATUS', '3_P_003_STATUS', '3_P_004_STATUS']
+}
+
+# TEP column names: First 41 are sensors (s1-s41), last 12 are actuators (a1-a12)
+TEP_COLUMN_NAMES = [
+	'A Feed', 'D Feed', 'E Feed', 'A and C Feed', 'Recycle Flow', 'Reactor Feed Rate', 'Reactor Pressure', 'Reactor Level', 'Reactor Temperature', 'Purge Rate',
+	'Product Sep Temp', 'Product Sep Level', 'Product Sep Pressure', 'Product Sep Underflow', 'Stripper Level', 'Stripper Pressure', 'Stripper Underflow', 'Stripper Temp', 'Stripper Steam Flow', 'Compressor Work',
+	'Reactor Coolant Temp', 'Separator Coolant Temp', 'Comp A to Reactor', 'Comp B to Reactor', 'Comp C to Reactor', 'Comp D to Reactor', 'Comp E to Reactor', 'Comp F to Reactor', 'Comp A in Purge', 'Comp B in Purge',
+	'Comp C in Purge', 'Comp D in Purge', 'Comp E in Purge', 'Comp F in Purge', 'Comp G in Purge', 'Comp H in Purge', 'Comp D in Product', 'Comp E in Product', 'Comp F in Product', 'Comp G in Product', 'Comp H in Product',
+	'D Feed (MV)', 'E Feed (MV)', 'A Feed (MV)', 'A and C Feed (MV)', 'Recycle (MV)', 'Purge (MV)', 'Separator (MV)', 'Stripper (MV)', 'Steam (MV)', 'Reactor Coolant (MV)', 'Condenser Coolant (MV)', 'Agitator (MV)'
+]
+
+TEP_SUB_MAP = {
+	'Reactor': ['A Feed', 'A and C Feed', 'Reactor Feed Rate', 'Reactor Pressure', 'Reactor Level', 'Reactor Temperature', 'Reactor Coolant Temp', 'A Feed (MV)', 'A and C Feed (MV)', 'Reactor Coolant (MV)'],
+	'Separator': ['Product Sep Temp', 'Product Sep Level', 'Product Sep Pressure', 'Product Sep Underflow', 'Separator Coolant Temp', 'Separator (MV)'],
+	'Stripper': ['Stripper Level', 'Stripper Pressure', 'Stripper Underflow', 'Stripper Temp', 'Stripper Steam Flow', 'Stripper (MV)', 'Steam (MV)'],
+	'Feeds': ['A Feed', 'D Feed', 'E Feed', 'A and C Feed', 'D Feed (MV)', 'E Feed (MV)', 'A Feed (MV)', 'A and C Feed (MV)'],
+	'Recycle': ['Recycle Flow', 'Purge Rate', 'Recycle (MV)', 'Purge (MV)'],
+	'Compressor': ['Compressor Work', 'Condenser Coolant (MV)'],
+	'Compositions': ['Comp A to Reactor', 'Comp B to Reactor', 'Comp C to Reactor', 'Comp D to Reactor', 'Comp E to Reactor', 'Comp F to Reactor',
+					'Comp A in Purge', 'Comp B in Purge', 'Comp C in Purge', 'Comp D in Purge', 'Comp E in Purge', 'Comp F in Purge', 'Comp G in Purge', 'Comp H in Purge',
+					'Comp D in Product', 'Comp E in Product', 'Comp F in Product', 'Comp G in Product', 'Comp H in Product'],
+	'Actuators': ['Agitator (MV)']
+}
+
+def classify_wadi_sensor_type(column_name):
+    """
+    Classify WADI sensor/actuator types based on naming conventions.
+    
+    Returns:
+        - sensor_type: str (AIT, FIT, LIT, LS, MV, P, etc.)
+        - category: str (sensor, actuator)
+        - type_id: int (for embedding lookup)
+    """
+    column_upper = column_name.upper()
+    
+    # Sensor types
+    if 'AIT' in column_upper:
+        return 'AIT', 'sensor', 0  # Analyzer/Transmitter (Temperature)
+    elif 'FIT' in column_upper:
+        return 'FIT', 'sensor', 1  # Flow Indicator/Transmitter
+    elif 'LIT' in column_upper or ('LT' in column_upper and 'LIT' not in column_upper):
+        return 'LIT', 'sensor', 2  # Level Indicator/Transmitter
+    elif 'LS' in column_upper:
+        return 'LS', 'sensor', 3   # Level Switch
+    elif 'PIT' in column_upper:
+        return 'PIT', 'sensor', 4  # Pressure Indicator/Transmitter
+    elif 'DPIT' in column_upper:
+        return 'DPIT', 'sensor', 5  # Differential Pressure Indicator/Transmitter
+    elif 'FIC' in column_upper:
+        return 'FIC', 'sensor', 6  # Flow Indicator/Controller
+    elif 'FQ' in column_upper:
+        return 'FQ', 'sensor', 7   # Flow Quantity
+    elif 'PIC' in column_upper:
+        return 'PIC', 'sensor', 8  # Pressure Indicator/Controller
+    
+    # Actuator types
+    elif 'MV' in column_upper and 'STATUS' in column_upper:
+        return 'MV', 'actuator', 9  # Motor Valve
+    elif 'P_' in column_upper and 'STATUS' in column_upper:
+        return 'P', 'actuator', 10  # Pump
+    elif 'MCV' in column_upper:
+        return 'MCV', 'actuator', 11  # Motor Control Valve
+    elif 'SV' in column_upper and 'STATUS' in column_upper:
+        return 'SV', 'actuator', 12  # Solenoid Valve
+    
+    # Default fallback
+    else:
+        return 'UNKNOWN', 'sensor', 13
+
+def is_actuator(dataset, label):
+    
+    if dataset == 'SWAT':
+        if 'IT' in label:
+            return False
+        else:
+            return True
+    elif dataset == 'WADI':
+        if 'STATUS' in label:
+            return True
+        else:
+            return False
+    elif dataset == 'TEP':
+        # TEP actuators are the last 12 columns in the CSV
+        actuator_names = [
+            'D feed', 'E Feed', 'A Feed', 'A and C Feed', 'Recycle', 'Purge',
+            'Separator', 'Stripper', 'Steam', 'Reactor Coolant', 'Condenser Coolant', 'Agitator'
+        ]
+        return label in actuator_names
+    
+    return False
+
+# Given a feature, return a vector of ranking outcomes
+def get_rel_scores(dataset, sensor_cols, graph, true_col_name):
+
+	max_dist = 5
+	rel_scores = np.zeros(len(sensor_cols))
+	distances = nx.shortest_path_length(graph, true_col_name)
+
+	for i in range(len(sensor_cols)):
+		col_name = sensor_cols[i]
+		
+		if col_name in distances:
+			rel_scores[i] = 5 - min(distances[col_name], 5)
+		elif col_to_subsystem_idx(dataset, col_name) == col_to_subsystem_idx(dataset, true_col_name):
+			rel_scores[i] = 1
+		else:
+			rel_scores[i] = 0
+
+	return rel_scores
+
+
+def col_to_subsystem_idx(dataset, col_name):
+	true_idx = -1
+	if dataset == 'SWAT':
+		true_idx = int(col_name[-3]) - 1
+	elif dataset == 'WADI':
+		sub_map = WADI_SUB_MAP
+		for index, (key, val) in enumerate(sub_map.items()):
+			if col_name in sub_map[key]:
+				true_idx = index
+				break
+	
+	return true_idx
+
+
+def to_subsystem_scores(dataset, sensor_cols, flat_scores):
+
+	sub_idxs = []
+	sub_errors = []
+	sub_error_map = dict()
+
+	if dataset == 'SWAT':
+
+		sub_map = SWAT_SUB_MAP
+		for key in sub_map.keys():
+			for item in sub_map[key]:
+				sub_idxs.append(sensor_cols.index(item))
+			sub_errors.append(np.mean(flat_scores[sub_idxs]))
+			sub_error_map[key] = np.mean(flat_scores[sub_idxs])
+
+	elif dataset == 'WADI':
+
+		sub_map = WADI_SUB_MAP
+		for key in sub_map.keys():
+			for item in sub_map[key]:
+				sub_idxs.append(sensor_cols.index(item))
+			sub_errors.append(np.mean(flat_scores[sub_idxs]))
+			sub_error_map[key] = np.mean(flat_scores[sub_idxs])
+
+	return sub_errors
+
+def subsample(data, num_to_sample):
+
+	shuffle_idx = np.random.permutation(len(data))[:num_to_sample]
+	return data[shuffle_idx]
+
+def sen_to_idx(sensor):
+	"""Convert TEP sensor notation (s1, a1) to column index"""
+	sensor_type = sensor[0]
+	sensor_value = int(sensor[1:])
+
+	if sensor_type == 'a':
+		return sensor_value + 40
+	elif sensor_type == 's':
+		return sensor_value - 1
+
+def idx_to_sen(idx):
+	"""Convert TEP column index to sensor notation (s1, a1)"""
+	if idx >= 41:
+		return f'a{idx-40}'
+	return f's{idx+1}'
+
+def tep_column_to_sensor_notation(column_name):
+	"""Convert TEP full column name to sensor notation (s1, a1)"""
+	if column_name in TEP_COLUMN_NAMES:
+		idx = TEP_COLUMN_NAMES.index(column_name)
+		return idx_to_sen(idx)
+	return None
+
+def tep_sensor_notation_to_column(sensor_notation):
+	"""Convert TEP sensor notation (s1, a1) to full column name"""
+	idx = sen_to_idx(sensor_notation)
+	if 0 <= idx < len(TEP_COLUMN_NAMES):
+		return TEP_COLUMN_NAMES[idx]
+	return None
+
+def adjust_attack_indices_for_sampling(attacks, original_length, sampled_length, sample_rate):
+    """
+    Adjust attack indices to account for data sampling.
+    
+    When we sample data (e.g., 10% sample rate), the attack indices need to be adjusted
+    to match the new indices in the sampled dataset.
+    
+    Parameters
+    ----------
+    attacks : list of np.array
+        Original attack indices from get_attack_indices()
+    original_length : int
+        Length of the original dataset
+    sampled_length : int
+        Length of the sampled dataset
+    sample_rate : float
+        Sampling rate used (e.g., 0.1 for 10%)
+        
+    Returns
+    -------
+    list of list
+        Adjusted attack windows as [start, end] pairs that exist in sampled data
+    """
+    if sample_rate >= 1.0:
+        # No sampling, return original indices as [start, end] pairs
+        return [[arr[0], arr[-1]] for arr in attacks]
+    
+    print(f"Adjusting attack indices for {sample_rate*100}% sampling...")
+    print(f"Original dataset length: {original_length}, Sampled length: {sampled_length}")
+    
+    # Create mapping from original indices to sampled indices using linspace
+    # This matches the sampling method used in load_swat_data
+    sampled_indices = np.linspace(0, original_length-1, sampled_length, dtype=int)
+    
+    # Create a mapping dictionary for fast lookup
+    original_to_sampled = {}
+    for sampled_idx, original_idx in enumerate(sampled_indices):
+        original_to_sampled[original_idx] = sampled_idx
+    
+    adjusted_attacks = []
+    
+    for attack_idx, attack_range in enumerate(attacks):
+        attack_start = attack_range[0]
+        attack_end = attack_range[-1]
+        
+        # Find sampled indices that fall within this attack range
+        sampled_attack_indices = []
+        for sampled_idx, original_idx in enumerate(sampled_indices):
+            if attack_start <= original_idx <= attack_end:
+                sampled_attack_indices.append(sampled_idx)
+        
+        if len(sampled_attack_indices) > 0:
+            # Attack has representation in sampled data
+            adjusted_start = sampled_attack_indices[0]
+            adjusted_end = sampled_attack_indices[-1]
+            adjusted_attacks.append([adjusted_start, adjusted_end])
+            print(f"  Attack {attack_idx}: {attack_start}-{attack_end} -> {adjusted_start}-{adjusted_end} ({len(sampled_attack_indices)} points)")
+        else:
+            # Attack completely missed in sampling
+            print(f"  Attack {attack_idx}: {attack_start}-{attack_end} -> MISSED (no sampled points)")
+    
+    print(f"Adjusted attacks: {len(adjusted_attacks)}/{len(attacks)} attacks have representation in sampled data")
+    return adjusted_attacks
+
+def get_sampling_info_from_dataset(dataset):
+    """
+    Extract sampling information from a dataset to help with attack index adjustment.
+    
+    Parameters
+    ----------
+    dataset : SWaTDataset
+        The dataset object
+        
+    Returns
+    -------
+    dict
+        Dictionary containing sampling information
+    """
+    info = {
+        'sampled_length': len(dataset.data),
+        'columns': dataset.columns,
+        'labels': dataset.labels
+    }
+    
+    # Try to infer original length and sample rate
+    # This is a heuristic based on common SWAT dataset sizes
+    if hasattr(dataset, 'sample_rate'):
+        info['sample_rate'] = dataset.sample_rate
+        info['original_length'] = int(len(dataset.data) / dataset.sample_rate)
+    else:
+        # Estimate based on known SWAT test set size (~450k samples)
+        if len(dataset.data) < 50000:  # Likely sampled
+            estimated_sample_rate = len(dataset.data) / 449919  # Approximate full SWAT test size
+            info['sample_rate'] = estimated_sample_rate
+            info['original_length'] = 449919
+        else:
+            info['sample_rate'] = 1.0
+            info['original_length'] = len(dataset.data)
+    
+    return info
+

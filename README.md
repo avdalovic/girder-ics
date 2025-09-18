@@ -64,6 +64,3 @@ python -m experiments.run_corel config=default model=corel dataset=tep src_dir="
 - **Comprehensive Baselines**: Multiple conformal prediction approaches for comparison
 - **Debug Logging**: Extensive debug output to track experiment progress
 
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

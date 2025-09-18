@@ -1,6 +1,6 @@
 # GIRDER: Graph Neural Network Conformal Prediction for Uncertainty Quantification in Industrial Control Systems
 
-This repository implements graph neural network-based conformal prediction for uncertainty quantification in Industrial Control Systems (ICS).
+This repository implements graph neural network-based conformal prediction for uncertainty quantification in Industrial Control Systems (ICS). This work is based on the CoRel framework.
 
 ## Industrial Control System Datasets
 

@@ -24,9 +24,18 @@ from lib.nn.encoders.rnn_encoder import RNNEncoder
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 
-from lib.datasets.gpvar import GPVARDataset
-from lib.datasets.air_quality import AirQuality
 from lib.datasets.swat import SWaTDataset
+
+# Optional imports for datasets that may not be available
+try:
+    from lib.datasets.gpvar import GPVARDataset
+except ImportError:
+    GPVARDataset = None
+
+try:
+    from lib.datasets.air_quality import AirQuality
+except ImportError:
+    AirQuality = None
 from lib.datasets.tep import TEPDataset  # Add this line
 from lib.engines.quantile_predictor import QuantilePredictor
 from lib.metrics.torch_metrics.coverage import MaskedCoverage, MaskedDeltaCoverage, MaskedPIWidth
@@ -71,8 +80,12 @@ def get_dataset(dataset_cfg):
     if name == 'la':
         dataset = MetrLA()
     elif name == 'air':
+        if AirQuality is None:
+            raise ImportError("AirQuality dataset not available. Please ensure lib.datasets.air_quality is properly installed.")
         dataset = AirQuality()
     elif name == 'gpvar':
+        if GPVARDataset is None:
+            raise ImportError("GPVARDataset not available. Please ensure lib.datasets.gpvar is properly installed.")
         dataset = GPVARDataset(**dataset_cfg["hparams"], p_max=0)
     elif name == 'swat':
         sample_rate = dataset_cfg.get('sample_rate', 10)

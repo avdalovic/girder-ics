@@ -16,7 +16,6 @@ try:
 except ImportError:
     WANDB_AVAILABLE = False
 
-from lib.datasets.gpvar import GPVARDataset
 from lib.datasets.swat import SWaTDataset
 from lib.engines.base_predictor import BasePredictor
 from lib.utils.data_utils import create_residuals_frame
@@ -32,10 +31,20 @@ from tsl.nn.models import TransformerModel
 from tsl.utils.casting import torch_to_numpy
 
 from lib.nn.base import RNNModel, STGNNModel  # , MLPModel
-from lib.datasets.air_quality import AirQuality
 from tsl.data import BatchMap, BatchMapItem
 from lib.datasets.tep import TEPDataset
 from lib.datasets.wadi import WADIDataset
+
+# Optional imports for datasets that may not be available
+try:
+    from lib.datasets.gpvar import GPVARDataset
+except ImportError:
+    GPVARDataset = None
+
+try:
+    from lib.datasets.air_quality import AirQuality
+except ImportError:
+    AirQuality = None
 
 
 def get_model_class(model_str):
@@ -57,8 +66,12 @@ def get_dataset(dataset_cfg):
     if name == 'la':
         dataset = MetrLA()
     elif name == 'air':
+        if AirQuality is None:
+            raise ImportError("AirQuality dataset not available. Please ensure lib.datasets.air_quality is properly installed.")
         dataset = AirQuality()
     elif name == 'gpvar':
+        if GPVARDataset is None:
+            raise ImportError("GPVARDataset not available. Please ensure lib.datasets.gpvar is properly installed.")
         dataset = GPVARDataset(**dataset_cfg.hparams, p_max=0)
     elif name == 'swat':
         # Get dataset parameters

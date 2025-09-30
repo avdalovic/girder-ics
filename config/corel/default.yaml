@@ -23,7 +23,7 @@ patience: 50
 batch_size: 64
 
 grad_clip_val: 5
-scale_axis: graph  
+scale_axis: node # normalization per node for ICS sensors  
 
 val_len: 0.1
 
@@ -32,9 +32,9 @@ val_len: 0.1
 src_dir: ???
 
 #### Wandb configuration #####################################################
-use_wandb: false
+use_wandb: true
 wandb:
-  project: anonymous
-  entity: anonymous
-  tags: [corel, conformal-prediction]
-  notes: "CoRel conformal prediction training"
+  project: corel-ics
+  entity: aavdalovic
+  tags: [corel, conformal-prediction, per-node-scaling]
+  notes: "CoRel conformal prediction training with per-node normalization for ICS sensors"

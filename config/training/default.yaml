@@ -19,7 +19,7 @@ batch_size: 32
 
 grad_clip_val: 5
 apply_scaler: true
-scale_axis: graph 
+scale_axis: node 
 
 dataset:
   splitting:
@@ -30,9 +30,9 @@ dataset:
 save_outputs: true
 
 #### Wandb configuration #####################################################
-use_wandb: false
+use_wandb: true
 wandb:
-  project: anonymous
-  entity: anonymous
-  tags: [base-model, training]
-  notes: "Base model training for GIRDER pipeline"
+  project: corel-ics
+  entity: aavdalovic
+  tags: [base-model, training, per-node-scaling]
+  notes: "Base model training with per-node normalization for ICS sensors"

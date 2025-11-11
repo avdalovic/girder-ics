@@ -1,6 +1,6 @@
 # Graph Neural Network Conformal Prediction for Uncertainty Quantification in Industrial Control Systems
 
-This repository implements graph neural network-based conformal prediction for uncertainty quantification in Industrial Control Systems (ICS). This work is based on the CoRel framework.
+This repository implements graph neural network-based conformal prediction for uncertainty quantification in Industrial Control Systems (ICS).
 
 ## Industrial Control System Datasets
 
@@ -63,4 +63,5 @@ python -m experiments.run_corel config=default model=corel dataset=tep src_dir="
 - **ICS-Optimized**: Preprocessing and configurations specifically tuned for industrial control systems
 - **Comprehensive Baselines**: Multiple conformal prediction approaches for comparison
 - **Debug Logging**: Extensive debug output to track experiment progress
+
 

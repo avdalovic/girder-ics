@@ -1,6 +1,6 @@
-# Graph Neural Network Conformal Prediction for Uncertainty Quantification in Industrial Control Systems
+# GRACE-ICS: Graph-Aware Conformal Intervals for Industrial Operations Assurance
 
-This repository implements graph neural network-based conformal prediction for uncertainty quantification in Industrial Control Systems (ICS). This work is based on the CoRel framework.
+This repository implements **GRACE-ICS** (Graph-Aware Conformal Intervals for Industrial Operations Assurance), providing graph neural network-based conformal prediction for uncertainty quantification in Industrial Control Systems (ICS). This work is based on the CoRel framework.
 
 ## Industrial Control System Datasets
 
